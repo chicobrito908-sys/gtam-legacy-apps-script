@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escalante Pro — GTAM</title>
+    <!-- Adiciona o ícone da página e customiza no celular -->
+    <meta name="theme-color" content="#0b1120">
+    <link rel="icon" type="image/x-icon" href="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/shield/default/48px.svg">
+
+    <style>
+        /* Removemos as margens padrão do navegador */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Impede a rolagem na página pai */
+            background-color: #0b1120; /* Cor de fundo escura do seu app */
+        }
+
+        /* O iframe vai ocupar a tela inteira, mas vamos empurrá-lo um pouco para cima */
+        .app-container {
+            width: 100%;
+            height: calc(100% + 40px); /* Compensa o espaço empurrado */
+            border: none;
+            margin-top: -38px; /* O PULO DO GATO: empurra os 38 pixels da faixa do Google pra fora da tela (para cima) */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Esse é o link oficial do seu sistema no Google Apps Script -->
+    <iframe class="app-container" src="https://script.google.com/macros/s/AKfycbxmVl0GU-MrjOSpuy9lY0HZx4DqIng8HjGLUuQWc09n3HixJZp02bXoOWKF71NkTTiO/exec" title="Escalante Pro"></iframe>
+
+</body>
+</html>

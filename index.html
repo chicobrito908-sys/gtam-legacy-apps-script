@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Escalante Pro — GTAM</title>
+<meta name="description" content="Sistema de Gerenciamento de Turno GTAM">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<?!= include('style'); ?>
+</head>
+<body>
+
+<div class="spin-ov" id="spinOv"><div class="spin"></div></div>
+<div class="sb-ov" id="sbOv" onclick="closeSb()"></div>
+
+<!-- TELA DE AUTENTICAÇÃO / ACESSO -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo"><img src="https://chicobrito908-sys.github.io/escalante.app/logo.png" style="width:100%;height:100%;object-fit:contain;border-radius:14px;" alt="Logo do GTAM"></div>
+    <h2 id="auth-title">Escalante Pro</h2>
+    <p id="auth-msg">Verificando identidade...</p>
+    
+    <div id="auth-request-form" style="display:none; margin-top:20px; text-align:left;">
+      <div class="form-g"><label style="font-size:12px; color:var(--t2)">Nome de Guerra / Completo</label><input type="text" id="req-nome" placeholder="Ex: GCM SILVA"></div>
+      <div class="form-g"><label style="font-size:12px; color:var(--t2)">Matrícula</label><input type="text" id="req-mat" placeholder="Sua matrícula"></div>
+      <button class="btn btn-p" onclick="solicitarAcesso()" style="width:100%; justify-content:center; margin-top:16px;">Solicitar Acesso</button>
+    </div>
+
+    <div id="auth-pending-msg" style="display:none; margin-top:20px; padding:20px; background:rgba(245,158,11,0.1); border-radius:12px; border:1px solid var(--amber);">
+      <i class="fa-solid fa-clock-rotate-left" style="font-size:32px; color:var(--amber); margin-bottom:12px;"></i>
+      <p style="color:var(--amber); font-weight:600; margin-bottom:4px;">Acesso Pendente</p>
+      <p style="font-size:13px; color:var(--t2);">Sua solicitação foi enviada. Aguarde a ativação pelo administrador do GTAM.</p>
+    </div>
+
+    <div id="auth-error-msg" style="display:none; color:var(--red); font-size:13px; margin-top:12px; text-align:center; font-weight:500;"></div>
+  </div>
+</div>
+
+<div class="app" id="appMain" style="display:none;">
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-i"><img src="https://chicobrito908-sys.github.io/escalante.app/logo.png" style="width:100%;height:100%;object-fit:contain;border-radius:11px;" alt="Logo do GTAM"></div>
+    <div class="logo-t"><h1>Escalante Pro</h1><span>GTAM</span></div>
+  </div>
+  <nav class="nav">
+    <div class="nav-sec">Principal</div>
+    <div class="nav-item active" id="nav-dashboard" onclick="go('dashboard')"><i class="fa-solid fa-house"></i> Dashboard</div>
+    <div class="nav-item" id="nav-efetivo" onclick="go('efetivo')"><i class="fa-solid fa-users"></i> Efetivo</div>
+    <div class="nav-sec">Gestão</div>
+    <div class="nav-item" id="nav-escalas" onclick="go('escalas')"><i class="fa-solid fa-calendar-days"></i> Escalas</div>
+    <div class="nav-item" id="nav-plantoes" onclick="go('plantoes')"><i class="fa-solid fa-star"></i> Plantões</div>
+    <div class="nav-sec">Ocorrências</div>
+    <div class="nav-item" id="nav-afastamentos" onclick="go('afastamentos')"><i class="fa-solid fa-briefcase-medical"></i> Afastamentos <span class="nbadge" id="badge-af" style="display:none">0</span></div>
+    <div class="nav-item" id="nav-ferias" onclick="go('ferias')"><i class="fa-solid fa-umbrella-beach"></i> Férias</div>
+    <div class="nav-item" id="nav-faltas" onclick="go('faltas')"><i class="fa-solid fa-xmark"></i> Faltas</div>
+    <div class="nav-item" id="nav-bancohoras" onclick="go('bancohoras')"><i class="fa-solid fa-clock"></i> Banco de Horas</div>
+    <div class="nav-item" id="nav-estatisticas" onclick="go('estatisticas')"><i class="fa-solid fa-chart-line"></i> Estatísticas</div>
+    <div id="nav-admin-sec" style="display:none">
+      <div class="nav-sec">Administração</div>
+      <div class="nav-item" id="nav-usuarios" onclick="go('usuarios')"><i class="fa-solid fa-user-shield"></i> Usuários <span class="nbadge" id="badge-u-pend" style="display:none">0</span></div>
+    </div>
+  </nav>
+  <div class="sidebar-foot" style="display:flex; flex-direction:column; gap:12px;">
+    <div class="clock"><div class="day" id="cDay">--</div><div class="date" id="cDate">Carregando...</div><div class="time" id="cTime">--:--</div></div>
+    <button class="btn btn-d btn-sm" onclick="sairSistema()" style="width:100%; justify-content:center"><i class="fa-solid fa-right-from-bracket"></i> Sair do Sistema</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <button class="hamburger" id="hamBtn" onclick="toggleSb()"><i class="fa-solid fa-bars"></i></button>
+    <span class="tb-title" id="tb-title">Dashboard</span>
+    <div class="tb-right" id="tb-actions"></div>
+  </div>
+  <div class="page-wrap">
+
+    <section class="page active" id="page-dashboard">
+      <div id="dash-alert" style="display:none; margin-bottom:16px;">
+        <div style="background:rgba(245,158,11,0.15); border:1px solid var(--amber); border-radius:var(--r); padding:12px 16px; display:flex; align-items:center; gap:12px; color:var(--amber); cursor:pointer" onclick="go('usuarios')">
+          <i class="fa-solid fa-triangle-exclamation" style="font-size:20px"></i>
+          <div style="flex:1">
+            <div style="font-weight:700; font-size:14px">Aprovações Pendentes</div>
+            <div style="font-size:12px; opacity:0.9">Existem novos usuários aguardando autorização de acesso.</div>
+          </div>
+          <i class="fa-solid fa-chevron-right"></i>
+        </div>
+      </div>
+      <div class="stats" id="dash-stats"></div>
+
+      <!-- DESTAQUES E RANKINGS -->
+      <div class="stats-grid" id="dash-rankings" style="margin-bottom:16px">
+        <div class="stats-card">
+          <div class="sc-hdr">
+            <div class="sc-ico ico-04" style="background:var(--p-low)"><i class="fa-solid fa-trophy" style="color:var(--p)"></i></div>
+            <div class="sc-info"><h4>Produtividade</h4><p>Escalas e Plantões (30 dias)</p></div>
+          </div>
+          <div class="rank-list" id="dash-rank-prod">
+            <div style="padding:20px; text-align:center; opacity:0.5; font-size:13px">Carregando rankings...</div>
+          </div>
+        </div>
+        <div class="stats-card">
+          <div class="sc-hdr">
+            <div class="sc-ico ico-health" style="background:rgba(16,185,129,0.1)"><i class="fa-solid fa-heart-pulse" style="color:var(--green)"></i></div>
+            <div class="sc-info"><h4>Assiduidade</h4><p>Menor índice de afastamentos</p></div>
+          </div>
+          <div class="rank-list" id="dash-rank-assid">
+            <div style="padding:20px; text-align:center; opacity:0.5; font-size:13px">Carregando rankings...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FORÇA DO DIA -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-hdr">
+          <span class="card-ttl"><i class="fa-solid fa-shield-halved"></i> Força Disponível Hoje</span>
+          <span style="font-size:11px;color:var(--t2)" id="forca-data"></span>
+        </div>
+        <div id="dash-forca"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr"><span class="card-ttl"><i class="fa-solid fa-sun"></i> Escala de Hoje</span></div>
+        <div id="dash-today"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="card"><div class="card-hdr"><span class="card-ttl"><i class="fa-solid fa-briefcase-medical"></i> Afastamentos Ativos</span></div><div id="dash-af"></div></div>
+        <div class="card"><div class="card-hdr"><span class="card-ttl"><i class="fa-solid fa-umbrella-beach"></i> Férias Próximas</span></div><div id="dash-fer"></div></div>
+      </div>
+    </section>
+
+    <!-- EFETIVO -->
+    <section class="page" id="page-efetivo">
+      <div class="card">
+        <div class="filter-bar">
+          <div class="srch"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="ef-srch" placeholder="Buscar por nome ou matrícula..." oninput="renderEfetivo()"></div>
+          <select id="ef-filter-tipo" onchange="renderEfetivo()" style="width:auto"><option value="">Todos os tipos</option><option value="24x72">24x72</option><option value="2x2">2x2</option></select>
+          <select id="ef-filter-status" onchange="renderEfetivo()" style="width:auto"><option value="true">Ativos</option><option value="">Todos</option><option value="false">Inativos</option></select>
+        </div>
+        <div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Nome de Guerra</th><th>Matrícula</th><th>Posto/Grad.</th><th>Tipo Escala</th><th>Grupo/Turno</th><th>Antiguidade</th><th>Status</th><th>Ações</th></tr></thead><tbody id="ef-tbody"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- USUÁRIOS -->
+    <section class="page" id="page-usuarios">
+      <div class="card">
+        <div class="card-hdr"><span class="card-ttl"><i class="fa-solid fa-user-shield"></i> Gestão de Acessos</span></div>
+        <div class="filter-bar">
+          <div class="srch"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="u-srch" placeholder="Buscar usuário..." oninput="renderUsuarios()"></div>
+          <select id="u-filter-status" onchange="renderUsuarios()" style="width:auto">
+            <option value="PENDENTE">Pendentes</option>
+            <option value="ATIVO">Ativos</option>
+            <option value="BLOQUEADO">Bloqueados</option>
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Usuário</th>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Nível</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="u-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ESCALAS -->
+    <section class="page" id="page-escalas">
+      <div class="card">
+        <div class="cal-ctrl">
+          <button class="cal-btn" onclick="calNav(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+          <h3 id="cal-title">Março 2026</h3>
+          <button class="cal-btn" onclick="calNav(1)"><i class="fa-solid fa-chevron-right"></i></button>
+          <button class="btn btn-sm btn-s" onclick="calNav(0)" style="margin-left:4px">Hoje</button>
+        </div>
+        <div class="cal-grid" id="cal-head"></div>
+        <div class="cal-grid" id="cal-body"></div>
+      </div>
+      <div class="day-panel" id="day-panel" style="display:none">
+        <div class="card-hdr"><span class="card-ttl" id="dp-title"><i class="fa-solid fa-calendar-day"></i> Selecione um dia</span></div>
+        <div class="card-body" id="dp-body"></div>
+        <div style="padding:12px; border-top:1px solid var(--b1); display:flex; gap:8px;">
+          <button class="btn btn-p" onclick="openAddEscala()" style="flex:1"><i class="fa-solid fa-plus"></i> Adicionar</button>
+          <button class="btn btn-g" onclick="shareWhatsApp()" title="Compartilhar no WhatsApp" style="width:48px; justify-content:center; padding:0;"><i class="fa-brands fa-whatsapp" style="font-size:20px"></i></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLANTÕES -->
+    <section class="page" id="page-plantoes">
+      <div class="card">
+        <div class="cal-ctrl">
+          <button class="cal-btn" onclick="pCalNav(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+          <h3 id="p-cal-title">Março 2026</h3>
+          <button class="cal-btn" onclick="pCalNav(1)"><i class="fa-solid fa-chevron-right"></i></button>
+          <button class="btn btn-sm btn-s" onclick="pCalNav(0)" style="margin-left:4px">Hoje</button>
+        </div>
+        <div class="cal-grid" id="p-cal-head"></div>
+        <div class="cal-grid" id="p-cal-body"></div>
+      </div>
+      <div class="day-panel" id="p-day-panel" style="display:none">
+        <div class="card-hdr"><span class="card-ttl" id="p-dp-title"><i class="fa-solid fa-star"></i> Selecione um dia</span>
+        <button class="btn btn-sm btn-p" onclick="openAddPlantao()"><i class="fa-solid fa-plus"></i> Adicionar</button></div>
+        <div id="p-dp-body"></div>
+      </div>
+    </section>
+
+    <!-- AFASTAMENTOS -->
+    <section class="page" id="page-afastamentos">
+      <div class="card">
+        <div class="filter-bar">
+          <div class="srch"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="af-srch" placeholder="Buscar..." oninput="renderAfastamentos()"></div>
+          <select id="af-filter" onchange="renderAfastamentos()" style="width:auto"><option value="">Todos</option><option value="ATIVO">Ativos</option><option value="ENCERRADO">Encerrados</option></select>
+        </div>
+        <div class="tbl-wrap"><table><thead><tr><th>Servidor</th><th>Tipo</th><th>Início</th><th>Fim</th><th>Dias</th><th>Motivo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="af-tbody"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- FÉRIAS -->
+    <section class="page" id="page-ferias">
+      <div class="card">
+        <div class="filter-bar">
+          <div class="srch"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="fer-srch" placeholder="Buscar..." oninput="renderFerias()"></div>
+        </div>
+        <div class="tbl-wrap"><table><thead><tr><th>Servidor</th><th>Ano Ref.</th><th>Início</th><th>Fim</th><th>Dias</th><th>Saldo Restante</th><th>Status</th><th>Ações</th></tr></thead><tbody id="fer-tbody"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- FALTAS -->
+    <section class="page" id="page-faltas">
+      <div class="card">
+        <div class="filter-bar">
+          <div class="srch"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="fa-srch" placeholder="Buscar..." oninput="renderFaltas()"></div>
+          <select id="fa-filter" onchange="renderFaltas()" style="width:auto"><option value="">Todas</option><option value="JUSTIFICADA">Justificadas</option><option value="INJUSTIFICADA">Injustificadas</option></select>
+        </div>
+        <div class="tbl-wrap"><table><thead><tr><th>Servidor</th><th>Data</th><th>Tipo</th><th>Justificativa</th><th>Status</th><th>Ações</th></tr></thead><tbody id="fa-tbody"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- BANCO DE HORAS -->
+    <section class="page" id="page-bancohoras">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="card" style="grid-column:1/-1">
+          <div class="card-hdr"><span class="card-ttl"><i class="fa-solid fa-scale-balanced"></i> Saldo por Servidor</span></div>
+          <div id="bh-saldos"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:0">
+        <div class="card-hdr"><span class="card-ttl"><i class="fa-solid fa-list"></i> Movimentações</span></div>
+        <div class="filter-bar">
+          <div class="srch"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="bh-srch" placeholder="Buscar..." oninput="renderBH()"></div>
+          <select id="bh-filter" onchange="renderBH()" style="width:auto"><option value="">Todos</option><option value="CREDITO">Créditos</option><option value="DEBITO">Débitos</option></select>
+        </div>
+        <div class="tbl-wrap"><table><thead><tr><th>Servidor</th><th>Data</th><th>Tipo</th><th>Horas</th><th>Motivo</th><th>Aprovado Por</th><th>Ações</th></tr></thead><tbody id="bh-tbody"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- ESTATÍSTICAS -->
+    <section class="page" id="page-estatisticas">
+      <div class="card">
+        <div class="stats-header">
+           <div class="stats-title">
+             <i class="fa-solid fa-ranking-star"></i> Rankings de Produtividade
+           </div>
+           <div class="stats-filters" id="stats-filters">
+             <button class="s-filter active" onclick="setStatsFilter('HOJE', this)">Hoje</button>
+             <button class="s-filter" onclick="setStatsFilter('SMN', this)">Semana</button>
+             <button class="s-filter" onclick="setStatsFilter('QZN', this)">Quinzena</button>
+             <button class="s-filter" onclick="setStatsFilter('MES', this)">Mês</button>
+             <button class="s-filter" onclick="setStatsFilter('ANO', this)">Ano</button>
+             <button class="s-filter" onclick="setStatsFilter('TUDO', this)">Tudo</button>
+           </div>
+        </div>
+        
+        <div class="stats-grid">
+           <div class="stats-card">
+              <div class="sc-hdr">
+                <div class="sc-ico ico-04"><i class="fa-solid fa-motorcycle"></i></div>
+                <div class="sc-info"><h4>Ranking "04"</h4><p>Quantidade de vezes como Garupa</p></div>
+              </div>
+              <div class="rank-list" id="rank-04"></div>
+           </div>
+           
+           <div class="stats-card">
+              <div class="sc-hdr">
+                <div class="sc-ico ico-health"><i class="fa-solid fa-briefcase-medical"></i></div>
+                <div class="sc-info"><h4>Assiduidade (Atestados)</h4><p>Total de dias em licença médica</p></div>
+              </div>
+              <div class="rank-list" id="rank-atestados"></div>
+           </div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /page-wrap -->
+</main>
+</div><!-- /app -->
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- Modal Efetivo -->
+<div class="overlay" id="m-efetivo">
+  <div class="modal">
+    <div class="m-hdr"><span class="m-ttl" id="m-ef-title">Novo Servidor</span><button class="m-cls" onclick="closeModal('m-efetivo')">×</button></div>
+    <div class="m-body">
+      <input type="hidden" id="ef-id">
+      <div class="form-row"><div class="form-g"><label>Nome Completo *</label><input type="text" id="ef-nome" placeholder="Nome do servidor"></div>
+      <div class="form-g"><label>Nome de Guerra *</label><input type="text" id="ef-guerra" placeholder="Ex: GD EDERSON"></div></div>
+      <div class="form-g"><label>CPF / Matrícula <span style="font-size:11px;opacity:0.6">(opcional)</span></label><input type="text" id="ef-mat" placeholder="CPF ou matrícula" maxlength="14" oninput="maskCPF(this)"></div></div>
+      <div class="form-row"><div class="form-g"><label>Posto/Graduação *</label><select id="ef-posto"><option value="Inspetor">Inspetor</option><option value="Subinspetor">Subinspetor</option><option value="GM">GM</option></select></div>
+      <div class="form-g"><label>Antiguidade (nº) *</label><input type="number" id="ef-ant" placeholder="Ex: 1" min="1"></div></div>
+      <div class="form-row"><div class="form-g"><label>Tipo de Escala *</label><select id="ef-tipo" onchange="toggleGrupo()"><option value="24x72">24x72</option><option value="2x2">2x2</option></select></div>
+      <div class="form-g" id="ef-grupo-wrap"><label>Grupo/Turno</label><select id="ef-grupo"><option value="MANHA">Manhã (06-14h)</option><option value="TARDE">Tarde (15-23h)</option></select></div></div>
+      <div class="form-row"><div class="form-g"><label>Admissão</label><input type="date" id="ef-adm"></div>
+      <div class="form-g"><label>Observações</label><input type="text" id="ef-obs" placeholder="Opcional"></div></div>
+    </div>
+    <div class="m-foot"><button class="btn btn-s" onclick="closeModal('m-efetivo')">Cancelar</button><button class="btn btn-p" onclick="saveEfetivo()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button></div>
+  </div>
+</div>
+
+<!-- Modal Escala -->
+<div class="overlay" id="m-escala">
+  <div class="modal">
+    <div class="m-hdr"><span class="m-ttl">Adicionar à Escala</span><button class="m-cls" onclick="closeModal('m-escala')">×</button></div>
+    <div class="m-body">
+      <div class="form-g"><label>Data</label><input type="date" id="esc-data"></div>
+      <div class="form-row">
+        <div class="form-g"><label>Turno</label><select id="esc-turno"><option value="SERVIÇO">SERVIÇO (24h)</option><option value="MANHÃ">MANHÃ (2x2)</option><option value="TARDE">TARDE (2x2)</option></select></div>
+        <div class="form-g"><label>Viatura/Equipe</label><input type="text" id="esc-equipe" list="equipes-sugestao" placeholder="Ex: GTAM 04, Apoio, Batedor..."><datalist id="equipes-sugestao"><option value="GTAM 04"><option value="GTAM 05"><option value="GTAM 07"><option value="GTAM 12"><option value="APOIO"><option value="SUPERVISOR"></datalist></div>
+      </div>
+      <div class="form-g"><label>Função</label><select id="esc-funcao">
+        <option value="01 - Batedor">01 - Batedor</option>
+        <option value="02 - Ala">02 - Ala</option>
+        <option value="03 - Escolta">03 - Escolta</option>
+        <option value="04 - Garupa">04 - Garupa</option>
+        <option value="Supervisor">Supervisor</option>
+        <option value="Armeiro">Armeiro</option>
+        <option value="Servidor">Servidor</option>
+      </select></div></div>
+      <div class="form-g"><label>Servidor *</label><div class="srch" style="margin-bottom:6px"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="esc-busca" placeholder="Buscar servidor..." oninput="renderEscSelect()"></div><div class="person-list" id="esc-list"></div></div>
+      <input type="hidden" id="esc-efetivo-id">
+      <div class="form-g"><label>Observações</label><input type="text" id="esc-obs" placeholder="Opcional"></div>
+    </div>
+    <div class="m-foot"><button class="btn btn-s" onclick="closeModal('m-escala')">Cancelar</button><button class="btn btn-p" onclick="saveEscala()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button></div>
+  </div>
+</div>
+
+<!-- Modal Plantão -->
+<div class="overlay" id="m-plantao">
+  <div class="modal">
+    <div class="m-hdr"><span class="m-ttl">Registrar Plantão</span><button class="m-cls" onclick="closeModal('m-plantao')">×</button></div>
+    <div class="m-body">
+      <div class="form-g"><label>Data</label><input type="date" id="plt-data"></div>
+      <div class="form-row"><div class="form-g"><label>Tipo de Plantão</label><select id="plt-tipo"><option value="Supervisor">Supervisor</option><option value="Armeiro">Armeiro</option><option value="Plantão Geral">Plantão Geral</option></select></div>
+      <div class="form-g"><label>Local</label><input type="text" id="plt-local" placeholder="Ex: Sede, Posto A..."></div></div>
+      <div class="form-g"><label>Servidor *</label><div class="srch" style="margin-bottom:6px"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="plt-busca" placeholder="Buscar servidor..." oninput="renderPltSelect()"></div><div class="person-list" id="plt-list"></div></div>
+      <input type="hidden" id="plt-efetivo-id">
+      <div class="form-g"><label>Observações</label><input type="text" id="plt-obs" placeholder="Opcional"></div>
+    </div>
+    <div class="m-foot"><button class="btn btn-s" onclick="closeModal('m-plantao')">Cancelar</button><button class="btn btn-p" onclick="savePlantao()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button></div>
+  </div>
+</div>
+
+<!-- Modal Afastamento -->
+<div class="overlay" id="m-afastamento">
+  <div class="modal">
+    <div class="m-hdr"><span class="m-ttl">Registrar Afastamento</span><button class="m-cls" onclick="closeModal('m-afastamento')">×</button></div>
+    <div class="m-body">
+      <div class="form-g"><label>Servidor *</label><select id="af-ef"></select></div>
+      <div class="form-g"><label>Tipo</label><select id="af-tipo"><option value="LICENÇA_MEDICA">Licença Médica</option><option value="LICENÇA_ESPECIAL">Licença Especial</option><option value="OUTROS">Outros</option></select></div>
+      <div class="form-row"><div class="form-g"><label>Data Início *</label><input type="date" id="af-ini"></div>
+      <div class="form-g"><label>Data Fim *</label><input type="date" id="af-fim"></div></div>
+      <div class="form-row"><div class="form-g"><label>Motivo</label><input type="text" id="af-mot" placeholder="Descrição..."></div>
+      <div class="form-g"><label>Documento/CID</label><input type="text" id="af-doc" placeholder="Ex: CID 10..."></div></div>
+    </div>
+    <div class="m-foot"><button class="btn btn-s" onclick="closeModal('m-afastamento')">Cancelar</button><button class="btn btn-p" onclick="saveAfastamento()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button></div>
+  </div>
+</div>
+
+<!-- Modal Férias -->
+<div class="overlay" id="m-ferias">
+  <div class="modal">
+    <div class="m-hdr"><span class="m-ttl">Agendar Férias</span><button class="m-cls" onclick="closeModal('m-ferias')">×</button></div>
+    <div class="m-body">
+      <div class="form-g"><label>Servidor *</label><select id="fer-ef"></select></div>
+      <div class="form-g"><label>Ano de Referência *</label><input type="number" id="fer-ano" placeholder="Ex: 2026" min="2020"></div>
+      <div class="form-row"><div class="form-g"><label>Data Início *</label><input type="date" id="fer-ini"></div>
+      <div class="form-g"><label>Data Fim *</label><input type="date" id="fer-fim"></div></div>
+      <div id="fer-dias-info" style="font-size:13px;color:var(--t2);margin-top:6px"></div>
+    </div>
+    <div class="m-foot"><button class="btn btn-s" onclick="closeModal('m-ferias')">Cancelar</button><button class="btn btn-p" onclick="saveFerias()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button></div>
+  </div>
+</div>
+
+<!-- Modal Falta -->
+<div class="overlay" id="m-falta">
+  <div class="modal">
+    <div class="m-hdr"><span class="m-ttl">Registrar Falta</span><button class="m-cls" onclick="closeModal('m-falta')">×</button></div>
+    <div class="m-body">
+      <div class="form-g"><label>Servidor *</label><select id="fa-ef"></select></div>
+      <div class="form-row"><div class="form-g"><label>Data *</label><input type="date" id="fa-data"></div>
+      <div class="form-g"><label>Tipo *</label><select id="fa-tipo"><option value="JUSTIFICADA">Justificada</option><option value="INJUSTIFICADA">Injustificada</option></select></div></div>
+      <div class="form-row"><div class="form-g"><label>Justificativa</label><textarea id="fa-just" placeholder="Descreva o motivo..."></textarea></div>
+      <div class="form-g"><label>Documento</label><input type="text" id="fa-doc" placeholder="Nº ou descrição..."></div></div>
+    </div>
+    <div class="m-foot"><button class="btn btn-s" onclick="closeModal('m-falta')">Cancelar</button><button class="btn btn-p" onclick="saveFalta()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button></div>
+  </div>
+</div>
+
+<!-- Modal Banco de Horas -->
+<div class="overlay" id="m-bh">
+  <div class="modal">
+    <div class="m-hdr"><span class="m-ttl">Lançar Horas</span><button class="m-cls" onclick="closeModal('m-bh')">×</button></div>
+    <div class="m-body">
+      <div class="form-g"><label>Servidor *</label><select id="bh-ef"></select></div>
+      <div class="form-row"><div class="form-g"><label>Data *</label><input type="date" id="bh-data"></div>
+      <div class="form-g"><label>Tipo *</label><select id="bh-tipo"><option value="CREDITO">Crédito (hora extra)</option><option value="DEBITO">Débito (hora usada)</option></select></div></div>
+      <div class="form-row"><div class="form-g"><label>Horas *</label><input type="number" id="bh-hrs" step="0.5" min="0.5" placeholder="Ex: 2"></div>
+      <div class="form-g"><label>Aprovado Por</label><input type="text" id="bh-aprov" placeholder="Nome..."></div></div>
+      <div class="form-g"><label>Motivo</label><input type="text" id="bh-mot" placeholder="Descrição..."></div>
+    </div>
+    <div class="m-foot"><button class="btn btn-s" onclick="closeModal('m-bh')">Cancelar</button><button class="btn btn-p" onclick="saveBH()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button></div>
+  </div>
+</div>
+
+<?!= include('script'); ?>
+</body>
+</html>
